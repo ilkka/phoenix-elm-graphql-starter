@@ -7,6 +7,14 @@
 # Generated on crash by the VM
 erl_crash.dump
 
+# Static artifacts
+/assets/node_modules
+
+# Elm stuff
+elm-stuff
+/assets/elm/dist/*
+/assets/elm/tests/index.html
+
 # Files matching config/*.secret.exs pattern contain sensitive
 # data and you should not commit them into version control.
 #
