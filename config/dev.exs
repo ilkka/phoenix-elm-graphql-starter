@@ -58,8 +58,8 @@ config :phoenix, :stacktrace_depth, 20
 # Configure your database
 config :phelmx, Phelmx.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
+  username: "phelmx",
+  password: "phelmx",
   database: "phelmx_dev",
   hostname: "localhost",
   pool_size: 10
