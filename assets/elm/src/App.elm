@@ -1,6 +1,8 @@
 module App exposing (..)
 
 import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 
 
 main : Program Never Model Msg
@@ -39,4 +41,11 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [] [ text (toString model) ]
+    div [ class "bg-grey-light" ]
+        [ div
+            [ class "container mx-auto px-4 shadow min-h-screen bg-white" ]
+            [ button [ onClick Increase ] [ text "+" ]
+            , text (toString model)
+            , button [ onClick Decrease ] [ text "-" ]
+            ]
+        ]
