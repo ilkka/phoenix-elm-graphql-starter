@@ -9,7 +9,7 @@ defmodule PhelmxWeb.Router do
     plug(:put_secure_browser_headers)
   end
 
-  pipeline :api do
+  pipeline :graphql do
     plug(:accepts, ["json"])
   end
 
@@ -21,11 +21,9 @@ defmodule PhelmxWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  scope "/api", PhelmxWeb do
-    pipe_through(:api)
-  end
+  scope "/graphql" do
+    pipe_through(:graphql)
 
-  scope "/api" do
     forward("/graphiql", Absinthe.Plug.GraphiQL,
       schema: PhelmxWeb.Schema,
       interface: :simple,
