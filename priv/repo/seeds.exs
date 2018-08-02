@@ -9,3 +9,12 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+alias Phelmx.Todo.Task
+alias Phelmx.Repo
+
+%Task{description: "Learn how to wire Phoenix and Elm up", done: false}
+  |> Repo.insert!
+
+%Task{description: "Get an air conditioner for the apartment", done: false}
+  |> Repo.insert!
+
