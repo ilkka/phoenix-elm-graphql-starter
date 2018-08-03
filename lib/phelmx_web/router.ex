@@ -10,9 +10,16 @@ defmodule PhelmxWeb.Router do
   end
 
   pipeline :graphql do
-    plug(:accepts, ["json"])
+    # plug(:accepts, ["json"])
   end
 
+  # graphql API scope
+  scope "/" do
+    pipe_through(:graphql)
+    forward("/graphql", Absinthe.Plug, schema: PhelmxWeb.Schema)
+  end
+
+  # browser scope
   scope "/", PhelmxWeb do
     # Use the default browser stack
     pipe_through(:browser)
@@ -20,14 +27,12 @@ defmodule PhelmxWeb.Router do
     get("/", PageController, :index)
   end
 
-  # Other scopes may use custom stacks.
-  scope "/graphql" do
-    pipe_through(:graphql)
-
+  # graphiql scope
+  scope "/" do
     forward("/graphiql", Absinthe.Plug.GraphiQL,
       schema: PhelmxWeb.Schema,
-      interface: :simple,
-      context: %{pubsub: PhelmxWeb.Endpoint}
+      socket: PhelmxWeb.UserSocket,
+      default_url: "/graphql"
     )
   end
 end

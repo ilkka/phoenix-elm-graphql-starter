@@ -1,11 +1,12 @@
 defmodule PhelmxWeb.UserSocket do
   use Phoenix.Socket
+  use Absinthe.Phoenix.Socket, schema: Phelmx.Schema
 
   ## Channels
   # channel "room:*", PhelmxWeb.RoomChannel
 
   ## Transports
-  transport :websocket, Phoenix.Transports.WebSocket
+  transport(:websocket, Phoenix.Transports.WebSocket)
   # transport :longpoll, Phoenix.Transports.LongPoll
 
   # Socket params are passed from the client and can
@@ -20,6 +21,9 @@ defmodule PhelmxWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   def connect(_params, socket) do
+    socket =
+      Absinthe.Phoenix.Socket.put_options(socket, context: PhelmxWeb.Absinthe.build_context())
+
     {:ok, socket}
   end
 
