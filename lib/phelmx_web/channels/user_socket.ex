@@ -1,6 +1,6 @@
 defmodule PhelmxWeb.UserSocket do
   use Phoenix.Socket
-  use Absinthe.Phoenix.Socket, schema: Phelmx.Schema
+  use Absinthe.Phoenix.Socket, schema: PhelmxWeb.Schema
 
   ## Channels
   # channel "room:*", PhelmxWeb.RoomChannel
