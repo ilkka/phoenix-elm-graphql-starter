@@ -3,6 +3,7 @@ module App exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Ports exposing (sendData, receiveData)
 
 
 main : Program Never Model Msg
@@ -11,32 +12,38 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
 type alias Model =
-    Int
+    { counter : Int
+    , message : String
+    }
 
 
 type Msg
     = Increase
     | Decrease
+    | BacktalkFromJS String
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( 0, Cmd.none )
+    ( { counter = 0, message = "" }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Increase ->
-            ( model + 1, Cmd.none )
+            ( { model | counter = model.counter + 1 }, sendData "Increased" )
 
         Decrease ->
-            ( model - 1, Cmd.none )
+            ( { model | counter = model.counter - 1 }, sendData "Decreased" )
+
+        BacktalkFromJS data ->
+            ( { model | message = data }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -49,11 +56,17 @@ view model =
                 , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
                 ]
                 [ text "+" ]
-            , span [ class "inline-block w-12 text-xl text-center" ] [ text (toString model) ]
+            , span [ class "inline-block w-12 text-xl text-center" ] [ text (toString model.counter) ]
             , button
                 [ onClick Decrease
                 , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
                 ]
                 [ text "-" ]
+            , div [] [ text model.message ]
             ]
         ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    receiveData BacktalkFromJS

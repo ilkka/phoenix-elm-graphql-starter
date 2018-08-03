@@ -16,8 +16,8 @@ elm-stuff
 /assets/elm/tests/index.html
 
 # stuff we build and put in priv/static
-/priv/static/css
-/priv/static/js
+/priv/static/css/app.css
+/priv/static/js/app.js
 
 # Files matching config/*.secret.exs pattern contain sensitive
 # data and you should not commit them into version control.
