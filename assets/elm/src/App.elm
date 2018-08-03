@@ -3,7 +3,8 @@ module App exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import Ports exposing (sendData, receiveData)
+import Ports
+import GraphQL.Request.Builder as GQL
 
 
 main : Program Never Model Msg
@@ -22,28 +23,68 @@ type alias Model =
     }
 
 
+type alias TodoTask =
+    { id : Int
+    , description : String
+    , done : Bool
+    }
+
+
+tasksQuery : GQL.Document GQL.Query (List TodoTask) {}
+tasksQuery =
+    let
+        task =
+            GQL.object TodoTask
+                |> GQL.with (GQL.field "id" [] GQL.int)
+                |> GQL.with (GQL.field "description" [] GQL.string)
+                |> GQL.with (GQL.field "done" [] GQL.bool)
+
+        queryRoot =
+            GQL.extract
+                (GQL.field "allTasks" [] (GQL.list task))
+    in
+        GQL.queryDocument queryRoot
+
+
+allTasksRequest : GQL.Request GQL.Query (List TodoTask)
+allTasksRequest =
+    GQL.request {} tasksQuery
+
+
 type Msg
     = Increase
     | Decrease
-    | BacktalkFromJS String
+    | SocketStart String
+    | SocketResult String
+    | SocketError String
+    | SocketAbort String
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, message = "" }, Cmd.none )
+    ( { counter = 0, message = "" }, Ports.query (GQL.requestBody allTasksRequest) )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Increase ->
-            ( { model | counter = model.counter + 1 }, sendData "Increased" )
+            ( { model | counter = model.counter + 1 }, Cmd.none )
 
         Decrease ->
-            ( { model | counter = model.counter - 1 }, sendData "Decreased" )
+            ( { model | counter = model.counter - 1 }, Cmd.none )
 
-        BacktalkFromJS data ->
-            ( { model | message = data }, Cmd.none )
+        SocketStart data ->
+            ( { model | message = "SocketStart: " ++ data }, Cmd.none )
+
+        SocketResult data ->
+            ( { model | message = "SocketResult: " ++ data }, Cmd.none )
+
+        SocketAbort data ->
+            ( { model | message = "SocketAbort: " ++ data }, Cmd.none )
+
+        SocketError data ->
+            ( { model | message = "SocketError: " ++ data }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -69,4 +110,9 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    receiveData BacktalkFromJS
+    Sub.batch
+        [ Ports.socketStart SocketStart
+        , Ports.socketResult SocketResult
+        , Ports.socketAbort SocketAbort
+        , Ports.socketError SocketError
+        ]

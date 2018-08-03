@@ -1,7 +1,25 @@
 port module Ports exposing (..)
 
+-- Outbound ports
 
-port sendData : String -> Cmd msg
+
+port push : String -> Cmd msg
 
 
-port receiveData : (String -> msg) -> Sub msg
+port query : String -> Cmd msg
+
+
+
+-- Inbound ports
+
+
+port socketAbort : (String -> msg) -> Sub msg
+
+
+port socketError : (String -> msg) -> Sub msg
+
+
+port socketStart : (String -> msg) -> Sub msg
+
+
+port socketResult : (String -> msg) -> Sub msg
