@@ -32,9 +32,9 @@ export function attachPorts(app) {
         logEvent('Start')(data);
         app.ports.socketStart.send(JSON.stringify(data));
       },
-      onResult: (data) => {
-        logEvent('Result')(data);
-        app.ports.socketResult.send(JSON.stringify(data));
+      onResult: (result) => {
+        logEvent('Result')(result);
+        app.ports.socketResult.send(JSON.stringify(result.data));
       },
     });
   });

@@ -4,7 +4,8 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Ports
-import GraphQL.Request.Builder as GQL
+import Api exposing (getAllTasks, decodeAllTasksResponse)
+import TodoTask exposing (TodoTask)
 
 
 main : Program Never Model Msg
@@ -20,35 +21,8 @@ main =
 type alias Model =
     { counter : Int
     , message : String
+    , tasks : List TodoTask
     }
-
-
-type alias TodoTask =
-    { id : Int
-    , description : String
-    , done : Bool
-    }
-
-
-tasksQuery : GQL.Document GQL.Query (List TodoTask) {}
-tasksQuery =
-    let
-        task =
-            GQL.object TodoTask
-                |> GQL.with (GQL.field "id" [] GQL.int)
-                |> GQL.with (GQL.field "description" [] GQL.string)
-                |> GQL.with (GQL.field "done" [] GQL.bool)
-
-        queryRoot =
-            GQL.extract
-                (GQL.field "allTasks" [] (GQL.list task))
-    in
-        GQL.queryDocument queryRoot
-
-
-allTasksRequest : GQL.Request GQL.Query (List TodoTask)
-allTasksRequest =
-    GQL.request {} tasksQuery
 
 
 type Msg
@@ -62,7 +36,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, message = "" }, Ports.push (GQL.requestBody allTasksRequest) )
+    ( { counter = 0, message = "", tasks = [] }, getAllTasks )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -78,7 +52,12 @@ update msg model =
             ( { model | message = "SocketStart: " ++ data }, Cmd.none )
 
         SocketResult data ->
-            ( { model | message = "SocketResult: " ++ data }, Cmd.none )
+            case (decodeAllTasksResponse data) of
+                Ok tasks ->
+                    ( { model | message = "SocketResult: " ++ data, tasks = tasks }, Cmd.none )
+
+                Err msg ->
+                    ( { model | message = "Error decoding " ++ data ++ ": " ++ msg, tasks = [] }, Cmd.none )
 
         SocketAbort data ->
             ( { model | message = "SocketAbort: " ++ data }, Cmd.none )
@@ -89,23 +68,31 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "bg-grey-light" ]
-        [ div
-            [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
-            [ button
-                [ onClick Increase
-                , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
+    let
+        tasks =
+            List.map taskItem model.tasks
+
+        taskItem task =
+            li [] [ text task.description ]
+    in
+        div [ class "bg-grey-light" ]
+            [ div
+                [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
+                [ button
+                    [ onClick Increase
+                    , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
+                    ]
+                    [ text "+" ]
+                , span [ class "inline-block w-12 text-xl text-center" ] [ text (toString model.counter) ]
+                , button
+                    [ onClick Decrease
+                    , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
+                    ]
+                    [ text "-" ]
+                , div [] [ text model.message ]
+                , ul [] tasks
                 ]
-                [ text "+" ]
-            , span [ class "inline-block w-12 text-xl text-center" ] [ text (toString model.counter) ]
-            , button
-                [ onClick Decrease
-                , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
-                ]
-                [ text "-" ]
-            , div [] [ text model.message ]
             ]
-        ]
 
 
 subscriptions : Model -> Sub Msg
