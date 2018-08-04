@@ -17,7 +17,7 @@ getAllTasks =
             requestBody allTasksQuery
 
         request =
-            { operation = operation, variables = null }
+            { id = "GetAllTasks", operation = operation, variables = null }
     in
         Ports.push request
 
@@ -49,7 +49,8 @@ updateTaskDone done taskId =
             jsonVariableValues mutation
 
         request =
-            { operation = operation
+            { id = "UpdateTask"
+            , operation = operation
             , variables =
                 case variables of
                     Just vars ->
@@ -94,8 +95,21 @@ type alias TaskFields =
     }
 
 
+decodeUpdateTaskResponse : String -> Result String TodoTask
+decodeUpdateTaskResponse response =
+    let
+        emptyVars =
+            { id = "", description = Nothing, done = Nothing }
+
+        decode =
+            decodeString <| responseDataDecoder <| updateTaskMutation emptyVars
+    in
+        response
+            |> decode
+
+
 updateTaskMutation : TaskFields -> Request Mutation TodoTask
-updateTaskMutation taskFields =
+updateTaskMutation fields =
     let
         taskIdVar =
             Var.required "id" .id Var.id
@@ -126,13 +140,4 @@ updateTaskMutation taskFields =
         doc =
             namedMutationDocument "UpdateTask" root
     in
-        request
-            -- { id = taskId
-            -- , description = taskFields.description
-            -- , done = taskFields.done
-            -- }
-            { id = "2"
-            , done = Just True
-            , description = Nothing
-            }
-            doc
+        request fields doc

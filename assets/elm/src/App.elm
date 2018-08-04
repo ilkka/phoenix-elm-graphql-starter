@@ -3,10 +3,11 @@ module App exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import Ports
-import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone)
+import Ports exposing (resultDecoder, GraphQLResult)
+import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone, decodeUpdateTaskResponse)
 import TodoTask exposing (TodoTask, TaskId)
 import Set exposing (Set)
+import Json.Decode exposing (Value, decodeValue)
 
 
 main : Program Never Model Msg
@@ -28,7 +29,7 @@ type alias Model =
 
 type Msg
     = SocketStart String
-    | SocketResult String
+    | SocketResult Value
     | SocketError String
     | SocketAbort String
     | SocketCancel String
@@ -42,6 +43,29 @@ init =
     ( { message = "", tasks = [], pendingTaskUpdates = Set.empty }, getAllTasks )
 
 
+updateWithResult : Model -> GraphQLResult -> ( Model, Cmd Msg )
+updateWithResult model result =
+    case result.id of
+        "GetAllTasks" ->
+            case (decodeAllTasksResponse result.data) of
+                Ok tasks ->
+                    ( { model | message = "", tasks = tasks }, Cmd.none )
+
+                Err msg ->
+                    ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
+
+        "UpdateTask" ->
+            case (decodeUpdateTaskResponse result.data) of
+                Ok task ->
+                    ( { model | message = "Updated task " ++ task.id }, Cmd.none )
+
+                Err msg ->
+                    ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -49,12 +73,12 @@ update msg model =
             ( { model | message = "SocketStart: " ++ data }, Cmd.none )
 
         SocketResult data ->
-            case (decodeAllTasksResponse data) of
-                Ok tasks ->
-                    ( { model | message = "", tasks = tasks }, Cmd.none )
+            case (decodeValue resultDecoder data) of
+                Ok result ->
+                    updateWithResult model result
 
                 Err msg ->
-                    ( { model | message = "Error decoding " ++ data ++ ": " ++ msg, tasks = [] }, Cmd.none )
+                    ( { model | message = "Error decoding result: " ++ msg }, Cmd.none )
 
         SocketAbort data ->
             ( { model | message = "SocketAbort: " ++ data }, Cmd.none )

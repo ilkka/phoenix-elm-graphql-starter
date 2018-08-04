@@ -19,7 +19,7 @@ defmodule PhelmxWeb.TodoResolver do
   def update_task(_root, args, _info) do
     task = Todo.get_task!(args.id)
 
-    case(Todo.update_task(task, %{done: true})) do
+    case(Todo.update_task(task, %{done: args.done})) do
       {:ok, task} ->
         {:ok, task}
 
