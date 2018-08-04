@@ -8,12 +8,13 @@ import Json.Decode exposing (decodeString)
 
 getAllTasks : Cmd msg
 getAllTasks =
-    Ports.push (requestBody allTasksRequest)
+    Ports.push <| requestBody allTasksRequest
 
 
 decodeAllTasksResponse : String -> Result String (List TodoTask)
 decodeAllTasksResponse response =
-    decodeString (responseDataDecoder allTasksRequest) response
+    response
+        |> decodeString (responseDataDecoder allTasksRequest)
 
 
 tasksQuery : Document Query (List TodoTask) {}
