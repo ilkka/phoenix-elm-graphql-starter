@@ -1,10 +1,10 @@
-/**
- * This module contains utility functions for setting up Elm ports.
- */
 import * as AbsintheSocket from '@absinthe/socket';
 
 import { createAbsintheSocket, createPhoenixSocket } from './socket';
 
+/**
+ * This module contains utility functions for setting up Elm ports.
+ */
 const logEvent = (eventName) => (...args) => console.log(eventName, ...args);
 
 /**
@@ -14,9 +14,9 @@ export function attachPorts(app) {
   const phoenixSocket = createPhoenixSocket();
   const absintheSocket = createAbsintheSocket(phoenixSocket);
 
-  // This port is for querying
-  app.ports.query.subscribe((query) => {
-    const notifier = AbsintheSocket.send(absintheSocket, { operation: query });
+  // This port is for pushing a graphql operation to the backend
+  app.ports.push.subscribe((operation) => {
+    const notifier = AbsintheSocket.send(absintheSocket, { operation });
     // we observe what happens and tell the Elm app through
     // some port ports
     AbsintheSocket.observe(absintheSocket, notifier, {
@@ -35,31 +35,6 @@ export function attachPorts(app) {
       onResult: (data) => {
         logEvent('Result')(data);
         app.ports.socketResult.send(JSON.stringify(data));
-      },
-    });
-  });
-
-  // This port is for pushing a graphql doc to the backend
-  app.ports.push.subscribe((doc) => {
-    const notifier = AbsintheSocket.send(absintheSocket, doc);
-    // we observe what happens and tell the Elm app through
-    // some port ports
-    AbsintheSocket.observe(absintheSocket, notifier, {
-      onAbort: (data) => {
-        logEvent('Abort')(data);
-        app.ports.socketAbort.send(data);
-      },
-      onError: (data) => {
-        logEvent('Error')(data);
-        app.ports.socketError.send(data);
-      },
-      onStart: (data) => {
-        logEvent('Start')(data);
-        app.ports.socketStart.send(data);
-      },
-      onResult: (data) => {
-        logEvent('Result')(data);
-        app.ports.socketResult.send(data);
       },
     });
   });

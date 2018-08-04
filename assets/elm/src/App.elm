@@ -62,7 +62,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, message = "" }, Ports.query (GQL.requestBody allTasksRequest) )
+    ( { counter = 0, message = "" }, Ports.push (GQL.requestBody allTasksRequest) )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

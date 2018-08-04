@@ -6,10 +6,6 @@ port module Ports exposing (..)
 port push : String -> Cmd msg
 
 
-port query : String -> Cmd msg
-
-
-
 -- Inbound ports
 
 
