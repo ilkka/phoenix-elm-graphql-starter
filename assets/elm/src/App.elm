@@ -32,6 +32,7 @@ type Msg
     | SocketResult String
     | SocketError String
     | SocketAbort String
+    | SocketCancel String
 
 
 init : ( Model, Cmd Msg )
@@ -64,6 +65,9 @@ update msg model =
 
         SocketError data ->
             ( { model | message = "SocketError: " ++ data }, Cmd.none )
+
+        SocketCancel data ->
+            ( { model | message = "SocketCancel: " ++ data }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -102,4 +106,5 @@ subscriptions model =
         , Ports.socketResult SocketResult
         , Ports.socketAbort SocketAbort
         , Ports.socketError SocketError
+        , Ports.socketCancel SocketCancel
         ]

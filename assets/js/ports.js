@@ -20,21 +20,25 @@ export function attachPorts(app) {
     // we observe what happens and tell the Elm app through
     // some port ports
     AbsintheSocket.observe(absintheSocket, notifier, {
-      onAbort: (data) => {
-        logEvent('Abort')(data);
-        app.ports.socketAbort.send(JSON.stringify(data));
-      },
-      onError: (data) => {
-        logEvent('Error')(data);
-        app.ports.socketError.send(JSON.stringify(data));
-      },
       onStart: (data) => {
-        logEvent('Start')(data);
-        app.ports.socketStart.send(JSON.stringify(data));
+        logEvent('Start')({ subscriptionId: data.subscriptionId });
+        app.ports.socketStart.send(data.subscriptionId || '');
       },
       onResult: (result) => {
         logEvent('Result')(result);
         app.ports.socketResult.send(JSON.stringify(result.data));
+      },
+      onCancel: () => {
+        logEvent('Cancel')({ subscriptionId: notifier.subscriptionId });
+        app.ports.socketCancel.send(notifier.subscriptionId);
+      },
+      onAbort: (error) => {
+        logEvent('Abort')({ message: error.message });
+        app.ports.socketAbort.send(error.message);
+      },
+      onError: (error) => {
+        logEvent('Error')({ message: error.message });
+        app.ports.socketError.send(error.message);
       },
     });
   });
