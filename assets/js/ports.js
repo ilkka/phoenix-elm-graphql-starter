@@ -15,8 +15,8 @@ export function attachPorts(app) {
   const absintheSocket = createAbsintheSocket(phoenixSocket);
 
   // This port is for pushing a graphql operation to the backend
-  app.ports.push.subscribe((operation) => {
-    const notifier = AbsintheSocket.send(absintheSocket, { operation });
+  app.ports.push.subscribe(({ operation, variables }) => {
+    const notifier = AbsintheSocket.send(absintheSocket, { operation, variables });
     // we observe what happens and tell the Elm app through
     // some port ports
     AbsintheSocket.observe(absintheSocket, notifier, {

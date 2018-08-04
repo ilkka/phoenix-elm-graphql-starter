@@ -1,9 +1,16 @@
 port module Ports exposing (..)
+import Json.Encode exposing (Value)
 
 -- Outbound ports
 
 
-port push : String -> Cmd msg
+type alias GraphQLRequest =
+    { operation : String
+    , variables : Value
+    }
+
+
+port push : GraphQLRequest -> Cmd msg
 
 
 

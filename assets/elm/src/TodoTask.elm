@@ -1,8 +1,9 @@
 module TodoTask exposing (..)
 
+type alias TaskId = String
 
 type alias TodoTask =
-    { id : String
+    { id : TaskId
     , description : String
     , done : Bool
     }

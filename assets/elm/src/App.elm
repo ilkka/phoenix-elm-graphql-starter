@@ -4,8 +4,9 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Ports
-import Api exposing (getAllTasks, decodeAllTasksResponse)
-import TodoTask exposing (TodoTask)
+import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone)
+import TodoTask exposing (TodoTask, TaskId)
+import Set exposing (Set)
 
 
 main : Program Never Model Msg
@@ -19,43 +20,38 @@ main =
 
 
 type alias Model =
-    { counter : Int
-    , message : String
+    { message : String
     , tasks : List TodoTask
+    , pendingTaskUpdates : Set TaskId
     }
 
 
 type Msg
-    = Increase
-    | Decrease
-    | SocketStart String
+    = SocketStart String
     | SocketResult String
     | SocketError String
     | SocketAbort String
     | SocketCancel String
+    | MarkTaskDone TaskId
+    | MarkTaskNotDone TaskId
+    | TaskUpdateFinished TaskId
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, message = "", tasks = [] }, getAllTasks )
+    ( { message = "", tasks = [], pendingTaskUpdates = Set.empty }, getAllTasks )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increase ->
-            ( { model | counter = model.counter + 1 }, Cmd.none )
-
-        Decrease ->
-            ( { model | counter = model.counter - 1 }, Cmd.none )
-
         SocketStart data ->
             ( { model | message = "SocketStart: " ++ data }, Cmd.none )
 
         SocketResult data ->
             case (decodeAllTasksResponse data) of
                 Ok tasks ->
-                    ( { model | message = "SocketResult: " ++ data, tasks = tasks }, Cmd.none )
+                    ( { model | message = "", tasks = tasks }, Cmd.none )
 
                 Err msg ->
                     ( { model | message = "Error decoding " ++ data ++ ": " ++ msg, tasks = [] }, Cmd.none )
@@ -69,6 +65,20 @@ update msg model =
         SocketCancel data ->
             ( { model | message = "SocketCancel: " ++ data }, Cmd.none )
 
+        MarkTaskDone taskId ->
+            ( { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }, markTaskDone taskId )
+
+        MarkTaskNotDone taskId ->
+            ( { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }, markTaskNotDone taskId )
+
+        TaskUpdateFinished taskId ->
+            ( { model | pendingTaskUpdates = Set.remove taskId model.pendingTaskUpdates }, Cmd.none )
+
+
+isPending : Model -> TodoTask -> Bool
+isPending model task =
+    False
+
 
 view : Model -> Html Msg
 view model =
@@ -77,22 +87,29 @@ view model =
             List.map taskItem model.tasks
 
         taskItem task =
-            li [] [ text task.description ]
+            li
+                []
+                [ input
+                    [ type_ "checkbox"
+                    , checked task.done
+                    , disabled (isPending model task)
+                    , onClick
+                        (case task.done of
+                            True ->
+                                MarkTaskNotDone task.id
+
+                            False ->
+                                MarkTaskDone task.id
+                        )
+                    ]
+                    []
+                , text task.description
+                ]
     in
         div [ class "bg-grey-light" ]
             [ div
                 [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
-                [ button
-                    [ onClick Increase
-                    , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
-                    ]
-                    [ text "+" ]
-                , span [ class "inline-block w-12 text-xl text-center" ] [ text (toString model.counter) ]
-                , button
-                    [ onClick Decrease
-                    , class "bg-blue rounded text-white font-bold w-10 h-10 hover:bg-blue-dark"
-                    ]
-                    [ text "-" ]
+                [ h1 [] [ text "To do:" ]
                 , div [] [ text model.message ]
                 , ul [] tasks
                 ]

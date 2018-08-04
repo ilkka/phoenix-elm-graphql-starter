@@ -21,9 +21,11 @@ defmodule PhelmxWeb.Schema do
       resolve(&TodoResolver.create_task/3)
     end
 
-    field :mark_task_done, :task do
+    field :update_task, :task do
       arg(:id, non_null(:id))
-      resolve(&TodoResolver.mark_task_done/3)
+      arg(:description, :string)
+      arg(:done, :boolean)
+      resolve(&TodoResolver.update_task/3)
     end
   end
 end
