@@ -30,7 +30,7 @@ export function attachPorts(app) {
       },
       onCancel: () => {
         logEvent('Cancel')({ subscriptionId: notifier.subscriptionId });
-        app.ports.socketCancel.send(notifier.subscriptionId);
+        app.ports.socketCancel.send(notifier.subscriptionId || '');
       },
       onAbort: (error) => {
         logEvent('Abort')({ message: error.message });
