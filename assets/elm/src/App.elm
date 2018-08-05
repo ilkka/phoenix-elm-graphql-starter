@@ -8,6 +8,7 @@ import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTask
 import TodoTask exposing (TodoTask, TaskId)
 import Set exposing (Set)
 import Json.Decode exposing (Value, decodeValue)
+import Task
 
 
 main : Program Never Model Msg
@@ -57,7 +58,7 @@ updateWithResult model result =
         "UpdateTask" ->
             case (decodeUpdateTaskResponse result.data) of
                 Ok task ->
-                    ( { model | message = "Updated task " ++ task.id }, Cmd.none )
+                    ( { model | message = "" }, (Task.perform TaskUpdateFinished) <| Task.succeed task.id )
 
                 Err msg ->
                     ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
@@ -101,7 +102,7 @@ update msg model =
 
 isPending : Model -> TodoTask -> Bool
 isPending model task =
-    False
+    Set.member task.id model.pendingTaskUpdates
 
 
 view : Model -> Html Msg
