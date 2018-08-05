@@ -2,12 +2,12 @@ module App exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onWithOptions)
 import Ports exposing (resultDecoder, GraphQLResult)
 import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone, decodeUpdateTaskResponse)
 import TodoTask exposing (TodoTask, TaskId)
 import Set exposing (Set)
-import Json.Decode exposing (Value, decodeValue)
+import Json.Decode as Decode exposing (Value, decodeValue)
 import Task
 
 
@@ -58,7 +58,15 @@ updateWithResult model result =
         "UpdateTask" ->
             case (decodeUpdateTaskResponse result.data) of
                 Ok task ->
-                    ( { model | message = "" }, (Task.perform TaskUpdateFinished) <| Task.succeed task.id )
+                    let
+                        ( match, rest ) =
+                            List.partition sameId model.tasks
+
+                        sameId : TodoTask -> Bool
+                        sameId task_ =
+                            task.id == task_.id
+                    in
+                        ( { model | tasks = [ task ] ++ rest, message = "" }, (Task.perform TaskUpdateFinished) <| Task.succeed task.id )
 
                 Err msg ->
                     ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
@@ -108,8 +116,23 @@ isPending model task =
 view : Model -> Html Msg
 view model =
     let
-        tasks =
-            List.map taskItem model.tasks
+        undoneFirstAlphabetical : TodoTask -> TodoTask -> Order
+        undoneFirstAlphabetical a b =
+            case ( a.done, b.done ) of
+                ( False, True ) ->
+                    LT
+
+                ( True, False ) ->
+                    GT
+
+                _ ->
+                    compare a.description b.description
+
+        sortedTasks =
+            List.sortWith undoneFirstAlphabetical model.tasks
+
+        taskItems =
+            List.map taskItem sortedTasks
 
         taskItem task =
             li
@@ -118,13 +141,19 @@ view model =
                     [ type_ "checkbox"
                     , checked task.done
                     , disabled (isPending model task)
-                    , onClick
-                        (case task.done of
-                            True ->
-                                MarkTaskNotDone task.id
+                    , onWithOptions
+                        "click"
+                        { stopPropagation = True
+                        , preventDefault = True
+                        }
+                        (Decode.succeed
+                            (case task.done of
+                                True ->
+                                    MarkTaskNotDone task.id
 
-                            False ->
-                                MarkTaskDone task.id
+                                False ->
+                                    MarkTaskDone task.id
+                            )
                         )
                     ]
                     []
@@ -136,7 +165,7 @@ view model =
                 [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
                 [ h1 [] [ text "To do:" ]
                 , div [] [ text model.message ]
-                , ul [] tasks
+                , ul [] taskItems
                 ]
             ]
 
