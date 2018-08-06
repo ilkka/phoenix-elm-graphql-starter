@@ -1,10 +1,10 @@
+/* This module contains utility functions for setting up Elm ports.
+ */
 import * as AbsintheSocket from '@absinthe/socket';
 
 import { createAbsintheSocket, createPhoenixSocket } from './socket';
 
-/**
- * This module contains utility functions for setting up Elm ports.
- */
+// log events to console
 const logEvent = (eventName) => (...args) => console.log(eventName, ...args);
 
 /**

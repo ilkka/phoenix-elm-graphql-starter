@@ -1,5 +1,4 @@
-/**
- * This module contains utility functions for setting up phoenix and
+/* This module contains utility functions for setting up phoenix and
  * absinthe sockets.
  */
 import * as AbsintheSocket from '@absinthe/socket';
