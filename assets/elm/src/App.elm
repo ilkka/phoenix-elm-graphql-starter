@@ -75,7 +75,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SocketStart data ->
-            ( { model | message = "SocketStart: " ++ data }, Cmd.none )
+            ( model, Cmd.none )
 
         GraphQLMessage result ->
             updateWithResult model result
@@ -90,13 +90,23 @@ update msg model =
             ( { model | message = "SocketCancel: " ++ data }, Cmd.none )
 
         MarkTaskDone taskId ->
-            ( { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }, markTaskDone taskId )
+            ( (markPending model taskId), markTaskDone taskId )
 
         MarkTaskNotDone taskId ->
-            ( { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }, markTaskNotDone taskId )
+            ( (markPending model taskId), markTaskNotDone taskId )
 
         TaskUpdateFinished taskId ->
-            ( { model | pendingTaskUpdates = Set.remove taskId model.pendingTaskUpdates }, Cmd.none )
+            ( (unmarkPending model taskId), Cmd.none )
+
+
+markPending : Model -> TaskId -> Model
+markPending model taskId =
+    { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }
+
+
+unmarkPending : Model -> TaskId -> Model
+unmarkPending model taskId =
+    { model | pendingTaskUpdates = Set.remove taskId model.pendingTaskUpdates }
 
 
 isPending : Model -> TodoTask -> Bool
