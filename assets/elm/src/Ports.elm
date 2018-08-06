@@ -1,42 +1,45 @@
 port module Ports exposing (..)
 
-import Json.Decode exposing (Value, map2, field, string)
+import Json.Decode exposing (Value)
 
 
--- Outbound ports
+-- Outbound
 
 
+{-| This type represents a request, either a query, mutation or subscription.
+It can have variables.
+-}
 type alias GraphQLRequest =
-    { id : String -- our own identifier that comes back in the response so we know how to decode
+    { tag : String -- our own tag that comes back in the response so we know how to decode
     , operation : String
     , variables : Value
     }
 
 
-port push : GraphQLRequest -> Cmd msg
+port send : GraphQLRequest -> Cmd msg
 
 
-
--- Inbound ports
-
-
+{-| This type describes a result being received from GraphQL.
+The data member contains the result as a JSON encoded string,
+and the tag member identifies the schema of the data so that an
+appropriate decoder can be selected.
+-}
 type alias GraphQLResult =
-    { id : String -- the identifier mirroring the one in the request
+    { tag : String -- the tag mirroring the one in the request
     , data : String -- JSON string with the actual data
     }
 
 
-resultDecoder : Json.Decode.Decoder GraphQLResult
-resultDecoder =
-    map2 GraphQLResult
-        (field "id" string)
-        (field "data" string)
+{-| This is the port that GraphQL results will come from.
+-}
+port receive : (GraphQLResult -> msg) -> Sub msg
+
+
+
+-- Here are some generic housekeeping ports that can be subbed to to receive info about socket events
 
 
 port socketStart : (String -> msg) -> Sub msg
-
-
-port socketResult : (Value -> msg) -> Sub msg
 
 
 port socketCancel : (String -> msg) -> Sub msg

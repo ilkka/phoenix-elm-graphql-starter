@@ -3,7 +3,7 @@ module App exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onWithOptions)
-import Ports exposing (resultDecoder, GraphQLResult)
+import Ports exposing (GraphQLResult)
 import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone, decodeUpdateTaskResponse)
 import TodoTask exposing (TodoTask, TaskId)
 import Set exposing (Set)
@@ -30,10 +30,10 @@ type alias Model =
 
 type Msg
     = SocketStart String
-    | SocketResult Value
     | SocketError String
     | SocketAbort String
     | SocketCancel String
+    | GraphQLMessage GraphQLResult
     | MarkTaskDone TaskId
     | MarkTaskNotDone TaskId
     | TaskUpdateFinished TaskId
@@ -46,7 +46,7 @@ init =
 
 updateWithResult : Model -> GraphQLResult -> ( Model, Cmd Msg )
 updateWithResult model result =
-    case result.id of
+    case result.tag of
         "GetAllTasks" ->
             case (decodeAllTasksResponse result.data) of
                 Ok tasks ->
@@ -81,13 +81,8 @@ update msg model =
         SocketStart data ->
             ( { model | message = "SocketStart: " ++ data }, Cmd.none )
 
-        SocketResult data ->
-            case (decodeValue resultDecoder data) of
-                Ok result ->
-                    updateWithResult model result
-
-                Err msg ->
-                    ( { model | message = "Error decoding result: " ++ msg }, Cmd.none )
+        GraphQLMessage result ->
+            updateWithResult model result
 
         SocketAbort data ->
             ( { model | message = "SocketAbort: " ++ data }, Cmd.none )
@@ -174,7 +169,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Ports.socketStart SocketStart
-        , Ports.socketResult SocketResult
+        , Ports.receive GraphQLMessage
         , Ports.socketAbort SocketAbort
         , Ports.socketError SocketError
         , Ports.socketCancel SocketCancel

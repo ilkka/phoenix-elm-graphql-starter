@@ -17,9 +17,9 @@ getAllTasks =
             requestBody allTasksQuery
 
         request =
-            { id = "GetAllTasks", operation = operation, variables = null }
+            { tag = "GetAllTasks", operation = operation, variables = null }
     in
-        Ports.push request
+        Ports.send request
 
 
 markTaskDone : TaskId -> Cmd msg
@@ -49,7 +49,7 @@ updateTaskDone done taskId =
             jsonVariableValues mutation
 
         request =
-            { id = "UpdateTask"
+            { tag = "UpdateTask"
             , operation = operation
             , variables =
                 case variables of
@@ -60,7 +60,7 @@ updateTaskDone done taskId =
                         null
             }
     in
-        Ports.push <| request
+        Ports.send <| request
 
 
 decodeAllTasksResponse : String -> Result String (List TodoTask)
