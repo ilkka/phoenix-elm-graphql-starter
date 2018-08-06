@@ -1,13 +1,37 @@
-module Api exposing (..)
+module TodoRepo exposing (..)
 
 import TodoTask exposing (TodoTask)
 import GraphQL.Request.Builder exposing (..)
 import GraphQL.Request.Builder.Arg as Arg
 import GraphQL.Request.Builder.Variable as Var
-import Ports
+import Ports exposing (GraphQLResult)
 import Json.Decode exposing (decodeString)
 import Json.Encode exposing (null)
 import TodoTask exposing (TaskId)
+import Result
+
+
+{-| This type describes the different kinds of results that can
+be delivered in response to todo operations.
+-}
+type TodoOperation
+    = GetAllTasks (List TodoTask)
+    | UpdateTask TodoTask
+
+
+{-| Decode a GraphQL result into a typed result based on its tag.
+-}
+decode : GraphQLResult -> Result String TodoOperation
+decode result =
+    case result.tag of
+        "GetAllTasks" ->
+            Result.map GetAllTasks (decodeAllTasksResponse result.data)
+
+        "UpdateTask" ->
+            Result.map UpdateTask (decodeUpdateTaskResponse result.data)
+
+        tag ->
+            Err ("Unknown result tag " ++ tag)
 
 
 getAllTasks : Cmd msg

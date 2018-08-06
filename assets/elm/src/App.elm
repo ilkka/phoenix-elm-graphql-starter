@@ -4,7 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onWithOptions)
 import Ports exposing (GraphQLResult)
-import Api exposing (getAllTasks, decodeAllTasksResponse, markTaskDone, markTaskNotDone, decodeUpdateTaskResponse)
+import TodoRepo exposing (getAllTasks, markTaskDone, markTaskNotDone, decode)
 import TodoTask exposing (TodoTask, TaskId)
 import Set exposing (Set)
 import Json.Decode as Decode exposing (Value, decodeValue)
@@ -46,33 +46,29 @@ init =
 
 updateWithResult : Model -> GraphQLResult -> ( Model, Cmd Msg )
 updateWithResult model result =
-    case result.tag of
-        "GetAllTasks" ->
-            case (decodeAllTasksResponse result.data) of
-                Ok tasks ->
-                    ( { model | message = "", tasks = tasks }, Cmd.none )
+    case decode result of
+        Ok (TodoRepo.GetAllTasks tasks) ->
+            ( { model | message = "", tasks = tasks }, Cmd.none )
 
-                Err msg ->
-                    ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
+        Ok (TodoRepo.UpdateTask task) ->
+            let
+                ( match, rest ) =
+                    List.partition sameId model.tasks
 
-        "UpdateTask" ->
-            case (decodeUpdateTaskResponse result.data) of
-                Ok task ->
-                    let
-                        ( match, rest ) =
-                            List.partition sameId model.tasks
+                sameId : TodoTask -> Bool
+                sameId task_ =
+                    task.id == task_.id
 
-                        sameId : TodoTask -> Bool
-                        sameId task_ =
-                            task.id == task_.id
-                    in
-                        ( { model | tasks = [ task ] ++ rest, message = "" }, (Task.perform TaskUpdateFinished) <| Task.succeed task.id )
+                newTasks =
+                    [ task ] ++ rest
 
-                Err msg ->
-                    ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
+                cmd =
+                    (Task.perform TaskUpdateFinished) <| Task.succeed task.id
+            in
+                ( { model | tasks = newTasks, message = "" }, cmd )
 
-        _ ->
-            ( model, Cmd.none )
+        Err msg ->
+            ( { model | message = "Error decoding result " ++ result.data ++ " : " ++ msg }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
