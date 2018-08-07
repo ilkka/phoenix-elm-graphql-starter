@@ -34,6 +34,8 @@ decode result =
             Err ("Unknown result tag " ++ tag)
 
 
+{-| Generate a command for sending a GraphQL query that gets all tasks.
+-}
 getAllTasks : Cmd msg
 getAllTasks =
     let
@@ -46,16 +48,25 @@ getAllTasks =
         Ports.send request
 
 
+{-| Generate a command for sending a GraphQL mutation that marks a task
+as done.
+-}
 markTaskDone : TaskId -> Cmd msg
 markTaskDone taskId =
     updateTaskDone True taskId
 
 
+{-| Generate a command for sending a GraphQL mutation that marks a task
+as not done.
+-}
 markTaskNotDone : TaskId -> Cmd msg
 markTaskNotDone taskId =
     updateTaskDone False taskId
 
 
+{-| Generate a command for sending a GraphQL mutation that marks a task
+as either done or not done.
+-}
 updateTaskDone : Bool -> TaskId -> Cmd msg
 updateTaskDone done taskId =
     let
@@ -87,12 +98,17 @@ updateTaskDone done taskId =
         Ports.send <| request
 
 
+{-| Decode a JSON string that represents a reply to the all tasks
+GraphQL query.
+-}
 decodeAllTasksResponse : String -> Result String (List TodoTask)
 decodeAllTasksResponse response =
     response
         |> decodeString (responseDataDecoder allTasksQuery)
 
 
+{-| The GraphQL query for getting all tasks.
+-}
 allTasksQuery : Request Query (List TodoTask)
 allTasksQuery =
     let
@@ -112,6 +128,10 @@ allTasksQuery =
         request {} doc
 
 
+{-| This type represents an update to a single task's properties. In essence
+it is a task with all fields except the ID wrapped in Maybe, allowing a partial
+update.
+-}
 type alias TaskFields =
     { id : String
     , description : Maybe String
@@ -119,6 +139,8 @@ type alias TaskFields =
     }
 
 
+{-| Decode a JSON string that represents a response to a task update.
+-}
 decodeUpdateTaskResponse : String -> Result String TodoTask
 decodeUpdateTaskResponse response =
     let
@@ -132,6 +154,8 @@ decodeUpdateTaskResponse response =
             |> decode
 
 
+{-| Generate a GraphQL mutation for updating a task.
+-}
 updateTaskMutation : TaskFields -> Request Mutation TodoTask
 updateTaskMutation fields =
     let
