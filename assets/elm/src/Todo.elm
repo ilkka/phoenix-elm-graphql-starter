@@ -1,11 +1,11 @@
-module TodoRepo exposing (..)
+module Todo exposing (TaskId, TodoTask, TodoOperation(..), decode, getAllTasks, markTaskDone, markTaskNotDone)
 
-import GraphQL.Request.Builder exposing (..)
+import GraphQL.Request.Builder as Gql
 import GraphQL.Request.Builder.Arg as Arg
 import GraphQL.Request.Builder.Variable as Var
-import Ports exposing (GraphQLResult)
-import Json.Decode exposing (decodeString)
-import Json.Encode exposing (null)
+import Ports
+import Json.Decode as D
+import Json.Encode as E
 import Result
 
 
@@ -34,7 +34,7 @@ type TodoOperation
 
 {-| Decode a GraphQL result into a typed result based on its tag.
 -}
-decode : GraphQLResult -> Result String TodoOperation
+decode : Ports.GraphQLResult -> Result String TodoOperation
 decode result =
     case result.tag of
         "GetAllTasks" ->
@@ -53,10 +53,10 @@ getAllTasks : Cmd msg
 getAllTasks =
     let
         operation =
-            requestBody allTasksQuery
+            Gql.requestBody allTasksQuery
 
         request =
-            { tag = "GetAllTasks", operation = operation, variables = null }
+            { tag = "GetAllTasks", operation = operation, variables = E.null }
     in
         Ports.send request
 
@@ -91,10 +91,10 @@ updateTaskDone done taskId =
                 }
 
         operation =
-            requestBody mutation
+            Gql.requestBody mutation
 
         variables =
-            jsonVariableValues mutation
+            Gql.jsonVariableValues mutation
 
         request =
             { tag = "UpdateTask"
@@ -105,7 +105,7 @@ updateTaskDone done taskId =
                         vars
 
                     Nothing ->
-                        null
+                        E.null
             }
     in
         Ports.send <| request
@@ -117,28 +117,28 @@ GraphQL query.
 decodeAllTasksResponse : String -> Result String (List TodoTask)
 decodeAllTasksResponse response =
     response
-        |> decodeString (responseDataDecoder allTasksQuery)
+        |> D.decodeString (Gql.responseDataDecoder allTasksQuery)
 
 
 {-| The GraphQL query for getting all tasks.
 -}
-allTasksQuery : Request Query (List TodoTask)
+allTasksQuery : Gql.Request Gql.Query (List TodoTask)
 allTasksQuery =
     let
         task =
-            object TodoTask
-                |> with (field "id" [] id)
-                |> with (field "description" [] string)
-                |> with (field "done" [] bool)
+            Gql.object TodoTask
+                |> Gql.with (Gql.field "id" [] Gql.id)
+                |> Gql.with (Gql.field "description" [] Gql.string)
+                |> Gql.with (Gql.field "done" [] Gql.bool)
 
         root =
-            extract
-                (field "allTasks" [] (list task))
+            Gql.extract
+                (Gql.field "allTasks" [] (Gql.list task))
 
         doc =
-            namedQueryDocument "GetAllTasks" root
+            Gql.namedQueryDocument "GetAllTasks" root
     in
-        request {} doc
+        Gql.request {} doc
 
 
 {-| This type represents an update to a single task's properties. In essence
@@ -161,7 +161,7 @@ decodeUpdateTaskResponse response =
             { id = "", description = Nothing, done = Nothing }
 
         decode =
-            decodeString <| responseDataDecoder <| updateTaskMutation emptyVars
+            D.decodeString <| Gql.responseDataDecoder <| updateTaskMutation emptyVars
     in
         response
             |> decode
@@ -169,7 +169,7 @@ decodeUpdateTaskResponse response =
 
 {-| Generate a GraphQL mutation for updating a task.
 -}
-updateTaskMutation : TaskFields -> Request Mutation TodoTask
+updateTaskMutation : TaskFields -> Gql.Request Gql.Mutation TodoTask
 updateTaskMutation fields =
     let
         taskIdVar =
@@ -182,14 +182,14 @@ updateTaskMutation fields =
             Var.optional "done" .done Var.bool False
 
         task =
-            object TodoTask
-                |> with (field "id" [] id)
-                |> with (field "description" [] string)
-                |> with (field "done" [] bool)
+            Gql.object TodoTask
+                |> Gql.with (Gql.field "id" [] Gql.id)
+                |> Gql.with (Gql.field "description" [] Gql.string)
+                |> Gql.with (Gql.field "done" [] Gql.bool)
 
         root =
-            extract
-                (field "updateTask"
+            Gql.extract
+                (Gql.field "updateTask"
                     [ ( "id", Arg.variable taskIdVar )
                     , ( "description", Arg.variable descriptionVar )
                     , ( "done", Arg.variable doneVar )
@@ -197,8 +197,8 @@ updateTaskMutation fields =
                     task
                 )
 
-        doc : Document Mutation TodoTask TaskFields
+        doc : Gql.Document Gql.Mutation TodoTask TaskFields
         doc =
-            namedMutationDocument "UpdateTask" root
+            Gql.namedMutationDocument "UpdateTask" root
     in
-        request fields doc
+        Gql.request fields doc

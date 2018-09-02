@@ -1,18 +1,18 @@
 module App exposing (..)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onWithOptions)
-import Ports exposing (GraphQLResult)
-import TodoRepo exposing (getAllTasks, markTaskDone, markTaskNotDone, decode, TodoTask, TaskId)
+import Html as H exposing (Html)
+import Html.Attributes as A
+import Html.Events as Events
+import Ports
+import Todo
 import Set exposing (Set)
-import Json.Decode as Decode exposing (Value, decodeValue)
 import Task
+import Json.Decode as D
 
 
 main : Program Never Model Msg
 main =
-    Html.program
+    H.program
         { init = init
         , view = view
         , update = update
@@ -22,8 +22,8 @@ main =
 
 type alias Model =
     { message : String
-    , tasks : List TodoTask
-    , pendingTaskUpdates : Set TaskId
+    , tasks : List Todo.TodoTask
+    , pendingTaskUpdates : Set Todo.TaskId
     }
 
 
@@ -32,29 +32,29 @@ type Msg
     | SocketError String
     | SocketAbort String
     | SocketCancel String
-    | GraphQLMessage GraphQLResult
-    | MarkTaskDone TaskId
-    | MarkTaskNotDone TaskId
-    | TaskUpdateFinished TaskId
+    | GraphQLMessage Ports.GraphQLResult
+    | MarkTaskDone Todo.TaskId
+    | MarkTaskNotDone Todo.TaskId
+    | TaskUpdateFinished Todo.TaskId
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { message = "", tasks = [], pendingTaskUpdates = Set.empty }, getAllTasks )
+    ( { message = "", tasks = [], pendingTaskUpdates = Set.empty }, Todo.getAllTasks )
 
 
-updateWithResult : Model -> GraphQLResult -> ( Model, Cmd Msg )
+updateWithResult : Model -> Ports.GraphQLResult -> ( Model, Cmd Msg )
 updateWithResult model result =
-    case decode result of
-        Ok (TodoRepo.GetAllTasks tasks) ->
+    case Todo.decode result of
+        Ok (Todo.GetAllTasks tasks) ->
             ( { model | message = "", tasks = tasks }, Cmd.none )
 
-        Ok (TodoRepo.UpdateTask task) ->
+        Ok (Todo.UpdateTask task) ->
             let
                 ( match, rest ) =
                     List.partition sameId model.tasks
 
-                sameId : TodoTask -> Bool
+                sameId : Todo.TodoTask -> Bool
                 sameId task_ =
                     task.id == task_.id
 
@@ -89,26 +89,26 @@ update msg model =
             ( { model | message = "SocketCancel: " ++ data }, Cmd.none )
 
         MarkTaskDone taskId ->
-            ( (markPending model taskId), markTaskDone taskId )
+            ( (markPending model taskId), Todo.markTaskDone taskId )
 
         MarkTaskNotDone taskId ->
-            ( (markPending model taskId), markTaskNotDone taskId )
+            ( (markPending model taskId), Todo.markTaskNotDone taskId )
 
         TaskUpdateFinished taskId ->
             ( (unmarkPending model taskId), Cmd.none )
 
 
-markPending : Model -> TaskId -> Model
+markPending : Model -> Todo.TaskId -> Model
 markPending model taskId =
     { model | pendingTaskUpdates = Set.insert taskId model.pendingTaskUpdates }
 
 
-unmarkPending : Model -> TaskId -> Model
+unmarkPending : Model -> Todo.TaskId -> Model
 unmarkPending model taskId =
     { model | pendingTaskUpdates = Set.remove taskId model.pendingTaskUpdates }
 
 
-isPending : Model -> TodoTask -> Bool
+isPending : Model -> Todo.TodoTask -> Bool
 isPending model task =
     Set.member task.id model.pendingTaskUpdates
 
@@ -116,7 +116,7 @@ isPending model task =
 view : Model -> Html Msg
 view model =
     let
-        undoneFirstAlphabetical : TodoTask -> TodoTask -> Order
+        undoneFirstAlphabetical : Todo.TodoTask -> Todo.TodoTask -> Order
         undoneFirstAlphabetical a b =
             case ( a.done, b.done ) of
                 ( False, True ) ->
@@ -135,18 +135,18 @@ view model =
             List.map taskItem sortedTasks
 
         taskItem task =
-            li
+            H.li
                 []
-                [ input
-                    [ type_ "checkbox"
-                    , checked task.done
-                    , disabled (isPending model task)
-                    , onWithOptions
+                [ H.input
+                    [ A.type_ "checkbox"
+                    , A.checked task.done
+                    , A.disabled (isPending model task)
+                    , Events.onWithOptions
                         "click"
                         { stopPropagation = True
                         , preventDefault = True
                         }
-                        (Decode.succeed
+                        (D.succeed
                             (case task.done of
                                 True ->
                                     MarkTaskNotDone task.id
@@ -157,25 +157,25 @@ view model =
                         )
                     ]
                     []
-                , text task.description
+                , H.text task.description
                 ]
 
         newTaskInput =
-            li
+            H.li
                 []
-                [ input
-                    [ type_ "text"
-                    , class "border border-grey-dark"
+                [ H.input
+                    [ A.type_ "text"
+                    , A.class "border border-grey-dark"
                     ]
                     []
                 ]
     in
-        div [ class "bg-grey-light" ]
-            [ div
-                [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
-                [ h1 [] [ text "To do:" ]
-                , div [] [ text model.message ]
-                , ul [] (taskItems ++ [ newTaskInput ])
+        H.div [ A.class "bg-grey-light" ]
+            [ H.div
+                [ A.class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
+                [ H.h1 [] [ H.text "To do:" ]
+                , H.div [] [ H.text model.message ]
+                , H.ul [] (taskItems ++ [ newTaskInput ])
                 ]
             ]
 
