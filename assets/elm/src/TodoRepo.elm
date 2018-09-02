@@ -1,14 +1,27 @@
 module TodoRepo exposing (..)
 
-import TodoTask exposing (TodoTask)
 import GraphQL.Request.Builder exposing (..)
 import GraphQL.Request.Builder.Arg as Arg
 import GraphQL.Request.Builder.Variable as Var
 import Ports exposing (GraphQLResult)
 import Json.Decode exposing (decodeString)
 import Json.Encode exposing (null)
-import TodoTask exposing (TaskId)
 import Result
+
+
+{-| Task ID
+-}
+type alias TaskId =
+    String
+
+
+{-| A task in our repository
+-}
+type alias TodoTask =
+    { id : TaskId
+    , description : String
+    , done : Bool
+    }
 
 
 {-| This type describes the different kinds of results that can
