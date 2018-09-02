@@ -159,13 +159,23 @@ view model =
                     []
                 , text task.description
                 ]
+
+        newTaskInput =
+            li
+                []
+                [ input
+                    [ type_ "text"
+                    , class "border border-grey-dark"
+                    ]
+                    []
+                ]
     in
         div [ class "bg-grey-light" ]
             [ div
                 [ class "container mx-auto py-3 px-4 shadow min-h-screen bg-white" ]
                 [ h1 [] [ text "To do:" ]
                 , div [] [ text model.message ]
-                , ul [] taskItems
+                , ul [] (taskItems ++ [ newTaskInput ])
                 ]
             ]
 
